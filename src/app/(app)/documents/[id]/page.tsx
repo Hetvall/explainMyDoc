@@ -74,7 +74,7 @@ export default async function DocumentPage({
               <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-foreground-subtle">
                 Pages
               </p>
-              <nav className="max-h-64 space-y-0.5 overflow-y-auto text-sm">
+              <nav className="scrollbar-thin max-h-64 space-y-0.5 overflow-y-auto text-sm">
                 {pages.map((p) => (
                   <a
                     key={p.pageNumber}
