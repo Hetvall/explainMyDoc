@@ -1,6 +1,6 @@
 import { NextResponse, after } from "next/server";
 import { getCurrentUserId } from "@/lib/auth";
-import { createDocument, listDocumentsForUser } from "@/lib/db/queries";
+import { createDocument, ensureUser, listDocumentsForUser } from "@/lib/db/queries";
 import { getStorage, makeStorageKey } from "@/lib/storage";
 import { isAcceptedFile } from "@/lib/validation/document";
 import { getEnv } from "@/lib/env";
@@ -11,13 +11,13 @@ import { processDocument } from "@/lib/documents/process";
 export const maxDuration = 60;
 
 export async function GET() {
-  const userId = getCurrentUserId();
+  const userId = await getCurrentUserId();
   const docs = await listDocumentsForUser(userId);
   return NextResponse.json({ documents: docs });
 }
 
 export async function POST(request: Request) {
-  const userId = getCurrentUserId();
+  const userId = await getCurrentUserId();
   const { MAX_FILE_SIZE_MB } = getEnv();
 
   let formData: FormData;
@@ -59,6 +59,7 @@ export async function POST(request: Request) {
     const buffer = Buffer.from(await file.arrayBuffer());
     const storageRef = await getStorage().save(storageKey, buffer);
 
+    await ensureUser(userId);
     const doc = await createDocument({
       id: documentId,
       userId,

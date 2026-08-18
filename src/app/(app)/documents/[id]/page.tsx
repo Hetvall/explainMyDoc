@@ -14,7 +14,7 @@ export default async function DocumentPage({
   params,
 }: PageProps<"/documents/[id]">) {
   const { id } = await params;
-  const userId = getCurrentUserId();
+  const userId = await getCurrentUserId();
   const document = await getOwnedDocument(id, userId);
 
   if (!document) notFound();

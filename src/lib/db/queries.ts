@@ -7,8 +7,20 @@ import {
   quizAttempts,
   quizzes,
   summaries,
+  users,
   type NewDocument,
 } from "./schema";
+
+/**
+ * Creates the anonymous user's row on first write if it doesn't exist yet
+ * (see lib/auth.ts). Idempotent — safe to call on every upload.
+ */
+export async function ensureUser(userId: string) {
+  await db
+    .insert(users)
+    .values({ id: userId, name: "Guest", email: `anon-${userId}@explainmydoc.local` })
+    .onConflictDoNothing();
+}
 
 /**
  * All document reads/writes go through here and are always scoped by

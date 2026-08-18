@@ -15,7 +15,7 @@ function greeting(): string {
 }
 
 export default async function DashboardPage() {
-  const userId = getCurrentUserId();
+  const userId = await getCurrentUserId();
   const [documents, stats] = await Promise.all([
     listDocumentsForUser(userId),
     getDashboardStats(userId),
