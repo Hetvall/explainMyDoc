@@ -1,0 +1,21 @@
+services:
+  db:
+    image: pgvector/pgvector:pg17
+    container_name: explainmydoc-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: explainmydoc
+      POSTGRES_PASSWORD: explainmydoc
+      POSTGRES_DB: explainmydoc
+    ports:
+      - "5434:5432"
+    volumes:
+      - explainmydoc_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U explainmydoc -d explainmydoc"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  explainmydoc_pgdata:

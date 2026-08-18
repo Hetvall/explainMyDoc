@@ -1,0 +1,241 @@
+@import "tailwindcss";
+
+/*
+ * ExplainMyDoc design tokens.
+ *
+ * Concept: the product's job is turning passive documents into understood,
+ * "highlighted" material — so the type system pairs a serif (for document
+ * reading) with a clean grotesk (for UI) and a mono (for extracted
+ * metadata), and the one accent color literally behaves like a highlighter
+ * marker (see .highlight-mark below). Background is a cool, neutral paper
+ * tone — not warm cream, not near-black — because this is a focused
+ * reading/work tool, not a marketing surface.
+ */
+
+:root {
+  /* Surfaces */
+  --background: #f7f8fa;
+  --surface: #ffffff;
+  --surface-muted: #f0f1f4;
+  --border: #e3e5ea;
+  --border-strong: #cdd1d9;
+
+  /* Ink */
+  --foreground: #17181c;
+  --foreground-muted: #52565f;
+  --foreground-subtle: #83878f;
+
+  /* Brand */
+  --brand: #4338ca;
+  --brand-hover: #372ea8;
+  --brand-foreground: #ffffff;
+  --brand-soft: #ecebfb;
+
+  /* Signature highlighter accent */
+  --highlight: #f7c948;
+  --highlight-strong: #eab308;
+  --highlight-ink: #4a3502;
+
+  /* Semantic */
+  --success: #0f9d74;
+  --success-soft: #e3f7f0;
+  --danger: #dc4c4c;
+  --danger-soft: #fbe9e9;
+  --warning: #d97706;
+  --warning-soft: #fdf1e0;
+
+  --radius: 0.65rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #111214;
+    --surface: #18191d;
+    --surface-muted: #1e2024;
+    --border: #2a2c31;
+    --border-strong: #3a3d44;
+
+    --foreground: #edeeef;
+    --foreground-muted: #a6a9b1;
+    --foreground-subtle: #75787f;
+
+    --brand: #6366f1;
+    --brand-hover: #7b7ef2;
+    --brand-foreground: #ffffff;
+    --brand-soft: #23244a;
+
+    --highlight: #f5c451;
+    --highlight-strong: #f0b429;
+    --highlight-ink: #2a1e02;
+
+    --success: #34c795;
+    --success-soft: #103227;
+    --danger: #f47272;
+    --danger-soft: #391a1a;
+    --warning: #f0a83e;
+    --warning-soft: #392a10;
+  }
+}
+
+:root[data-theme="dark"] {
+  --background: #111214;
+  --surface: #18191d;
+  --surface-muted: #1e2024;
+  --border: #2a2c31;
+  --border-strong: #3a3d44;
+  --foreground: #edeeef;
+  --foreground-muted: #a6a9b1;
+  --foreground-subtle: #75787f;
+  --brand: #6366f1;
+  --brand-hover: #7b7ef2;
+  --brand-foreground: #ffffff;
+  --brand-soft: #23244a;
+  --highlight: #f5c451;
+  --highlight-strong: #f0b429;
+  --highlight-ink: #2a1e02;
+  --success: #34c795;
+  --success-soft: #103227;
+  --danger: #f47272;
+  --danger-soft: #391a1a;
+  --warning: #f0a83e;
+  --warning-soft: #392a10;
+}
+
+:root[data-theme="light"] {
+  --background: #f7f8fa;
+  --surface: #ffffff;
+  --surface-muted: #f0f1f4;
+  --border: #e3e5ea;
+  --border-strong: #cdd1d9;
+  --foreground: #17181c;
+  --foreground-muted: #52565f;
+  --foreground-subtle: #83878f;
+  --brand: #4338ca;
+  --brand-hover: #372ea8;
+  --brand-foreground: #ffffff;
+  --brand-soft: #ecebfb;
+  --highlight: #f7c948;
+  --highlight-strong: #eab308;
+  --highlight-ink: #4a3502;
+  --success: #0f9d74;
+  --success-soft: #e3f7f0;
+  --danger: #dc4c4c;
+  --danger-soft: #fbe9e9;
+  --warning: #d97706;
+  --warning-soft: #fdf1e0;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-foreground: var(--foreground);
+  --color-foreground-muted: var(--foreground-muted);
+  --color-foreground-subtle: var(--foreground-subtle);
+  --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-brand-soft: var(--brand-soft);
+  --color-highlight: var(--highlight);
+  --color-highlight-strong: var(--highlight-strong);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --radius-md: var(--radius);
+
+  --font-sans: var(--font-plex-sans);
+  --font-serif: var(--font-plex-serif);
+  --font-mono: var(--font-plex-mono);
+}
+
+* {
+  border-color: var(--border);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+button:not(:disabled),
+[role="tab"],
+[role="button"],
+a[href],
+label[for],
+summary {
+  cursor: pointer;
+}
+
+/* Thin, unobtrusive scrollbar for internally-scrolling panels (e.g. the
+   AI tools panel) so it doesn't visually collide with tab bars/content. */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+}
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: var(--border-strong);
+  border-radius: 999px;
+}
+
+::selection {
+  background: var(--highlight);
+  color: var(--highlight-ink);
+}
+
+/* Signature element: a literal highlighter-marker stroke behind text.
+   Used sparingly — key phrases, selected text, correct-answer emphasis. */
+.highlight-mark {
+  position: relative;
+  white-space: nowrap;
+}
+.highlight-mark::before {
+  content: "";
+  position: absolute;
+  left: -0.15em;
+  right: -0.15em;
+  bottom: 0.05em;
+  top: 0.15em;
+  background: var(--highlight);
+  opacity: 0.55;
+  transform: rotate(-0.6deg);
+  border-radius: 0.2em 0.4em 0.25em 0.35em;
+  z-index: -1;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .animate-in-fade {
+    animation: fade-in 0.35s ease-out both;
+  }
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
