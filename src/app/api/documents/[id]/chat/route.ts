@@ -6,6 +6,9 @@ import { conversations, messages } from "@/lib/db/schema";
 import { requireProcessedDocument, toErrorResponse } from "@/lib/api/guard";
 import { answerDocumentQuestion } from "@/lib/ai/chat";
 
+// AI generation can take a while — extend past the platform default on serverless.
+export const maxDuration = 60;
+
 /** Returns (creating if needed) the single conversation for this document — one thread per document keeps the MVP simple. */
 async function getOrCreateConversation(documentId: string) {
   const [existing] = await db
