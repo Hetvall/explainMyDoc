@@ -31,6 +31,8 @@ Upload → Understand → Ask → Practice → Review → Understand better
   states (file too large, wrong type, empty file, extraction failure).
 - **Processing pipeline** — extract → clean → chunk → embed → store in Postgres/pgvector, with the
   document's status (`uploaded → processing → processed/failed`) always visible and never stuck.
+  Kicked off via Next.js `after()` right after upload so it survives on serverless deploys without
+  blocking the response.
 - **AI summary** — TL;DR, key points, important concepts, action items, "who should care", and an
   estimated reading time — generated once and cached.
 - **Explain this** — select any text in the document and get it explained *Simple / Detailed /
@@ -54,21 +56,24 @@ Next.js 16 (App Router, TS, React 19) + Tailwind v4
         │
   ┌─────┴──────────────┬───────────────────┬─────────────────────┐
   lib/documents/        lib/ai/             lib/storage/           lib/db/
-  extract → clean →     provider.ts (model  StorageProvider        Drizzle schema +
-  chunk → embed         abstraction) +      interface; local FS    ownership-scoped
-  (process.ts orchestrates)  summary/chat/  implementation today   queries
-                         explain/quiz/                              (queries.ts)
+  extract → clean →     provider.ts (google/ StorageProvider       Drizzle schema +
+  chunk → embed         openai/groq model    interface; local FS   ownership-scoped
+  (process.ts orchestrates)  abstraction) +   or Vercel Blob         queries
+                         summary/chat/                              (queries.ts)
+                         explain/quiz/
                          flashcards/study-plan
                          + retrieval.ts (RAG)
+                         + generate-object.ts (Zod-validated output)
         │
   PostgreSQL 17 + pgvector (HNSW index, cosine similarity)
 ```
 
 **Why this shape:**
 - **Provider abstraction** (`lib/ai/provider.ts`) — every AI call goes through `getModel()` /
-  `getEmbeddingModel()`. Swapping OpenAI for another provider means changing one file.
+  `getEmbeddingModel()`. Swapping Google/OpenAI/Groq for another provider means changing one file.
 - **Storage abstraction** (`lib/storage/`) — raw files never sit in Postgres; a `StorageProvider`
-  interface makes it a one-file change to swap local disk for S3/Vercel Blob/Supabase later.
+  interface makes it a one-file change to swap providers. Local disk today for dev, and Vercel
+  Blob (`STORAGE_DRIVER=blob`) for production, since serverless filesystems are ephemeral.
 - **No-login MVP, isolated** (`lib/auth.ts`) — a single seeded demo user, so the demo flow is
   friction-free, but every call site already asks `getCurrentUserId()` instead of trusting a
   client-supplied id, so real auth can slot in without touching business logic.
@@ -98,13 +103,15 @@ needed — they operate on the whole document), capped to a safe character limit
 
 ## Tech stack
 
-Next.js 16 (App Router) · TypeScript · React 19 · Tailwind CSS v4 · PostgreSQL 17 + pgvector ·
-Drizzle ORM · AI SDK (`ai`, `@ai-sdk/google`, `@ai-sdk/openai`) · Zod · `unpdf` (PDF text
-extraction) · Radix UI primitives · lucide-react.
+Next.js 16 (App Router, Turbopack) · TypeScript · React 19 · Tailwind CSS v4 · PostgreSQL 17 +
+pgvector · Drizzle ORM · Vercel AI SDK (`ai`, `@ai-sdk/google`, `@ai-sdk/openai`, Groq via its
+OpenAI-compatible endpoint) · Zod · `unpdf` (PDF text extraction) · Radix UI primitives ·
+lucide-react · `@vercel/blob` (optional production storage driver).
 
 ## AI provider
 
-ExplainMyDoc supports two providers behind the same abstraction (`lib/ai/provider.ts`):
+ExplainMyDoc supports three providers behind the same abstraction (`lib/ai/provider.ts`), selected
+with `AI_PROVIDER`:
 
 - **Google Gemini (default)** — has a real free tier with no card required, via
   [Google AI Studio](https://aistudio.google.com/apikey). This is the default specifically because
@@ -112,8 +119,13 @@ ExplainMyDoc supports two providers behind the same abstraction (`lib/ai/provide
   entirely.
 - **OpenAI** — fully supported, set `AI_PROVIDER=openai` and provide `OPENAI_API_KEY` (requires a
   funded/billed account).
+- **Groq** — set `AI_PROVIDER=groq` and provide `GROQ_API_KEY` for text generation only, via
+  Groq's OpenAI-compatible Chat Completions endpoint (much higher free-tier rate limits than
+  Google's, useful if Gemini's free-tier limit — as low as 20 req/min on some models — gets hit
+  under real demo traffic). Groq has no embeddings API, so `GOOGLE_API_KEY` must still be set in
+  this mode — embeddings always run through Google regardless of `AI_PROVIDER`.
 
-Both providers are asked to emit the same `EMBEDDING_DIM` (768) for their embeddings, so the
+All providers are asked to emit the same `EMBEDDING_DIM` (768) for their embeddings, so the
 pgvector column has one fixed dimension regardless of which provider generated a given document's
 embeddings — switching providers doesn't require a schema change.
 
@@ -124,16 +136,20 @@ See [`.env.example`](.env.example) for the full list with descriptions. Summary:
 | Variable | Purpose |
 |---|---|
 | `DATABASE_URL` | Postgres connection string |
-| `AI_PROVIDER` | `google` (default) or `openai` |
-| `GOOGLE_API_KEY` | Required when `AI_PROVIDER=google` — free key at aistudio.google.com/apikey |
+| `AI_PROVIDER` | `google` (default), `openai`, or `groq` |
+| `GOOGLE_API_KEY` | Required when `AI_PROVIDER=google` (and always, when `AI_PROVIDER=groq`, since embeddings run through Google) — free key at aistudio.google.com/apikey |
 | `GOOGLE_MODEL` | Chat/completion model (default `gemini-flash-latest`) |
 | `GOOGLE_EMBEDDING_MODEL` | Embedding model (default `gemini-embedding-001`) |
 | `OPENAI_API_KEY` | Required when `AI_PROVIDER=openai` |
 | `OPENAI_MODEL` | Chat/completion model (default `gpt-4o-mini`) |
 | `OPENAI_EMBEDDING_MODEL` | Embedding model (default `text-embedding-3-small`) |
-| `EMBEDDING_DIM` | Output dimension both providers are forced to (default `768`) |
+| `GROQ_API_KEY` | Required when `AI_PROVIDER=groq` — free key at console.groq.com/keys |
+| `GROQ_MODEL` | Chat/completion model (default `openai/gpt-oss-120b`) |
+| `EMBEDDING_DIM` | Output dimension all providers are forced to (default `768`) |
 | `MAX_FILE_SIZE_MB` | Upload size limit |
-| `STORAGE_DIR` | Local filesystem directory for uploaded files |
+| `STORAGE_DRIVER` | `local` (default, dev) or `blob` (Vercel Blob, for serverless deploys) |
+| `STORAGE_DIR` | Local filesystem directory for uploaded files (only used when `STORAGE_DRIVER=local`) |
+| `BLOB_READ_WRITE_TOKEN` | Vercel Blob token (only needed when `STORAGE_DRIVER=blob`; Vercel injects it automatically once a Blob store is connected) |
 | `DEMO_USER_ID` | Fixed user id for the no-login MVP |
 
 ## Local setup
@@ -185,28 +201,41 @@ document id, AI quota/failure) using `curl` against the running dev server.
 
 ## Deployment
 
-The MVP is built to be self-hosted (`next build && next start`) against a Postgres+pgvector
-instance — the demo relies on background processing continuing after the upload request returns,
-which needs a long-running Node process (not a serverless request/response cycle). To deploy:
+The app can be deployed either way:
 
-1. Provision Postgres with the `pgvector` extension available (e.g. a small VM/Docker host, or a
-   managed Postgres that supports installing extensions).
+**Serverless (Vercel)** — document processing after upload uses Next.js's `after()` (backed by
+Vercel's `waitUntil` in production, see `src/app/api/documents/route.ts`), which keeps the
+function invocation alive until `processDocument()` finishes instead of relying on a persistent
+process. AI route handlers set `maxDuration = 60` to give processing/generation enough time within
+a serverless function's lifetime.
+
+1. Provision Postgres with the `pgvector` extension available (e.g. Neon, Supabase, or any managed
+   Postgres that supports installing extensions).
+2. Set `STORAGE_DRIVER=blob` and connect a Vercel Blob store (`BLOB_READ_WRITE_TOKEN` is injected
+   automatically) — Vercel's filesystem is read-only/ephemeral, so `STORAGE_DRIVER=local` won't work here.
+3. Set the remaining environment variables from `.env.example`.
+4. Run `npm run db:migrate && npm run db:seed` against that database (locally, or as a one-off
+   deploy step/CI job with `DATABASE_URL` pointed at production).
+5. Deploy — `next build` runs as usual.
+
+**Self-hosted** (`next build && next start`) against a Postgres+pgvector instance — same steps as
+above, except `STORAGE_DRIVER=local` works fine (point `STORAGE_DIR` at a persistent volume), since
+the Node process stays alive between requests.
+
+1. Provision Postgres with the `pgvector` extension available (e.g. a small VM/Docker host).
 2. Set the environment variables from `.env.example`.
 3. Run `npm run db:migrate && npm run db:seed` against that database.
 4. `npm run build && npm run start` (or containerize with a Dockerfile using the same steps).
-5. Point `STORAGE_DIR` at a persistent volume (or swap in a cloud `StorageProvider` — see below).
-
-Deploying to a serverless platform (Vercel, etc.) would require moving document processing to a
-proper background job/queue instead of the current fire-and-forget async call — see Limitations.
+5. Point `STORAGE_DIR` at a persistent volume (or use `STORAGE_DRIVER=blob` here too, if preferred).
 
 ## Known limitations
 
 - **No real authentication.** Single seeded demo user, by design for a frictionless demo. Isolated
   behind `lib/auth.ts` so real auth (e.g. a session-based provider) can be added without touching
   business logic.
-- **Background processing assumes a long-running server.** Document processing is kicked off
-  without blocking the upload response; this relies on the Node process staying alive afterward,
-  which holds for `next dev`/`next start` but not for most serverless request lifecycles.
+- **Background processing has no retry/queue.** `after()` keeps the serverless invocation alive
+  long enough for `processDocument()` to run to a terminal status, but there's no retry-on-failure
+  or durable job queue — a crash mid-processing leaves the document `failed` until re-uploaded.
 - **No spaced-repetition scheduling yet.** Flashcard ratings (Again/Hard/Good/Easy) are recorded,
   but the next-review date isn't computed from them yet — `flashcards.difficulty` /
   `lastReviewedAt` / `reviewCount` are already in the schema as the extension point.
@@ -227,4 +256,3 @@ proper background job/queue instead of the current fire-and-forget async call �
 - DOCX and other format support.
 - Streaming chat responses token-by-token.
 - Automated test suite (unit tests for the chunking/RAG logic, e2e for the core flow).
-- Cloud storage provider (S3/Vercel Blob/Supabase Storage) for production deployments.
