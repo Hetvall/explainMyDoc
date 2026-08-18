@@ -7,6 +7,9 @@ import { requireProcessedDocument, toErrorResponse } from "@/lib/api/guard";
 import { generateQuiz } from "@/lib/ai/quiz";
 import { quizDifficultySchema, quizQuestionCountSchema } from "@/lib/validation/document";
 
+// AI generation can take a while — extend past the platform default on serverless.
+export const maxDuration = 60;
+
 export async function GET(
   _request: Request,
   ctx: RouteContext<"/api/documents/[id]/quiz">,

@@ -14,7 +14,11 @@ const globalForDb = globalThis as unknown as {
 
 function createQueryClient() {
   const { DATABASE_URL } = getEnv();
-  return postgres(DATABASE_URL, { max: 10 });
+  // `prepare: false` is required against poolers that don't support prepared
+  // statements (e.g. Neon's pooled/pgbouncer connection string, PgBouncer in
+  // transaction mode). Uncomment if you see prepared-statement errors when
+  // pointed at a pooled DATABASE_URL in production.
+  return postgres(DATABASE_URL, { max: 10 /* , prepare: false */ });
 }
 
 const queryClient =

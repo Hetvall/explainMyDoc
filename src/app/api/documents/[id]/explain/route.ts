@@ -4,6 +4,9 @@ import { requireProcessedDocument, toErrorResponse } from "@/lib/api/guard";
 import { explainTextInputSchema } from "@/lib/validation/document";
 import { explainText } from "@/lib/ai/explain";
 
+// AI generation can take a while — extend past the platform default on serverless.
+export const maxDuration = 60;
+
 export async function POST(
   request: Request,
   ctx: RouteContext<"/api/documents/[id]/explain">,

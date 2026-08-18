@@ -1,10 +1,14 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { getCurrentUserId } from "@/lib/auth";
 import { createDocument, listDocumentsForUser } from "@/lib/db/queries";
 import { getStorage, makeStorageKey } from "@/lib/storage";
 import { isAcceptedFile } from "@/lib/validation/document";
 import { getEnv } from "@/lib/env";
 import { processDocument } from "@/lib/documents/process";
+
+// Document processing (extract -> embed -> persist) can run long enough to
+// need more than the platform default on serverless.
+export const maxDuration = 60;
 
 export async function GET() {
   const userId = getCurrentUserId();
@@ -53,7 +57,7 @@ export async function POST(request: Request) {
 
   try {
     const buffer = Buffer.from(await file.arrayBuffer());
-    await getStorage().save(storageKey, buffer);
+    const storageRef = await getStorage().save(storageKey, buffer);
 
     const doc = await createDocument({
       id: documentId,
@@ -63,13 +67,16 @@ export async function POST(request: Request) {
       mimeType,
       fileSize: file.size,
       status: "uploaded",
-      storageKey,
+      storageKey: storageRef,
     });
 
     // Kick off processing without blocking the response — the client polls
     // GET /api/documents/[id] for status. processDocument() always resolves
     // to a terminal status itself, so a failure here still surfaces to the UI.
-    void processDocument(documentId, storageKey);
+    // after() (backed by Vercel's waitUntil in production) keeps the
+    // invocation alive until this finishes, unlike a bare fire-and-forget
+    // call which serverless platforms can kill right after the response.
+    after(() => processDocument(documentId, storageRef));
 
     return NextResponse.json({ document: doc }, { status: 201 });
   } catch (err) {

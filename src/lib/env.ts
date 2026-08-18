@@ -35,6 +35,13 @@ const envSchema = z.object({
   EMBEDDING_DIM: z.coerce.number().int().positive().default(768),
 
   MAX_FILE_SIZE_MB: z.coerce.number().int().positive().default(20),
+
+  // "local" writes to STORAGE_DIR on disk (dev). "blob" uses Vercel Blob —
+  // required in production since serverless has no persistent filesystem.
+  // BLOB_READ_WRITE_TOKEN is injected automatically once a Blob store is
+  // connected in the Vercel dashboard.
+  STORAGE_DRIVER: z.enum(["local", "blob"]).default("local"),
+  BLOB_READ_WRITE_TOKEN: z.string().optional(),
   STORAGE_DIR: z.string().default("./storage"),
   DEMO_USER_ID: z
     .string()
