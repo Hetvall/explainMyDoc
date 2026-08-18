@@ -8,7 +8,7 @@ export async function GET(
   ctx: RouteContext<"/api/documents/[id]">,
 ) {
   const { id } = await ctx.params;
-  const userId = getCurrentUserId();
+  const userId = await getCurrentUserId();
 
   const doc = await getOwnedDocument(id, userId);
   if (!doc) {
@@ -23,7 +23,7 @@ export async function DELETE(
   ctx: RouteContext<"/api/documents/[id]">,
 ) {
   const { id } = await ctx.params;
-  const userId = getCurrentUserId();
+  const userId = await getCurrentUserId();
 
   const doc = await getOwnedDocument(id, userId);
   if (!doc) {

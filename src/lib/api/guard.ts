@@ -12,7 +12,7 @@ import type { Document } from "@/lib/db/schema";
 export async function requireProcessedDocument(
   documentId: string,
 ): Promise<{ document: Document } | { error: NextResponse }> {
-  const userId = getCurrentUserId();
+  const userId = await getCurrentUserId();
   const doc = await getOwnedDocument(documentId, userId);
 
   if (!doc) {
