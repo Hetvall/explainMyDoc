@@ -67,6 +67,13 @@ export function SummaryPanel({ documentId }: { documentId: string }) {
 
   if (!summary) return null;
 
+  // Defensive: the API response isn't validated client-side, so a partial or
+  // malformed payload shouldn't throw during render (that would surface as
+  // the top-level error boundary instead of a contained empty state).
+  const keyPoints = summary.keyPoints ?? [];
+  const concepts = summary.concepts ?? [];
+  const actionItems = summary.actionItems ?? [];
+
   return (
     <div className="animate-in-fade space-y-6 text-sm">
       <div>
@@ -77,7 +84,7 @@ export function SummaryPanel({ documentId }: { documentId: string }) {
       <div>
         <SectionLabel icon={ListChecks}>Key points</SectionLabel>
         <ul className="space-y-1.5">
-          {summary.keyPoints.map((point, i) => (
+          {keyPoints.map((point, i) => (
             <li key={i} className="flex gap-2 leading-relaxed text-foreground">
               <span className="mt-1.5 size-1 shrink-0 rounded-full bg-brand" />
               {point}
@@ -86,11 +93,11 @@ export function SummaryPanel({ documentId }: { documentId: string }) {
         </ul>
       </div>
 
-      {summary.concepts.length > 0 && (
+      {concepts.length > 0 && (
         <div>
           <SectionLabel>Important concepts</SectionLabel>
           <dl className="space-y-2">
-            {summary.concepts.map((c, i) => (
+            {concepts.map((c, i) => (
               <div key={i}>
                 <dt className="font-medium text-foreground">{c.term}</dt>
                 <dd className="text-foreground-muted">{c.definition}</dd>
@@ -102,9 +109,9 @@ export function SummaryPanel({ documentId }: { documentId: string }) {
 
       <div>
         <SectionLabel>Action items</SectionLabel>
-        {summary.actionItems.length > 0 ? (
+        {actionItems.length > 0 ? (
           <ul className="space-y-1.5">
-            {summary.actionItems.map((item, i) => (
+            {actionItems.map((item, i) => (
               <li key={i} className="flex gap-2 leading-relaxed text-foreground">
                 <span className="mt-1.5 size-1 shrink-0 rounded-full bg-warning" />
                 {item}

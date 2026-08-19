@@ -22,15 +22,25 @@ const PROCESSING_MESSAGES = [
 export function ProcessingStatus({ document }: { document: Document }) {
   const router = useRouter();
   const [messageIndex, setMessageIndex] = React.useState(0);
+  const refreshedRef = React.useRef(false);
 
   React.useEffect(() => {
     if (document.status !== "processing" && document.status !== "uploaded") return;
+    refreshedRef.current = false;
 
     const poll = setInterval(async () => {
+      if (refreshedRef.current) return;
       const res = await fetch(`/api/documents/${document.id}`);
       if (!res.ok) return;
-      const { document: latest } = await res.json();
-      if (latest.status !== "uploaded" && latest.status !== "processing") {
+      const latest = (await res.json())?.document;
+      if (latest && latest.status !== "uploaded" && latest.status !== "processing") {
+        // Reached a terminal state (processed/failed) — refresh once to pull
+        // in the server-rendered result, then stop polling. Without this
+        // guard, ticks that arrive before the interval is cleared each fire
+        // another router.refresh(), stacking re-fetches of the force-dynamic
+        // route and making the page feel laggy.
+        refreshedRef.current = true;
+        clearInterval(poll);
         router.refresh();
       }
     }, 2000);

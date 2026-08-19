@@ -25,6 +25,13 @@ export async function processDocument(documentId: string, storageKey: string) {
       ? "text/plain"
       : "application/pdf";
 
+    // Diagnostic only — helps distinguish "the file itself is invalid" from
+    // "the bytes got corrupted/truncated in transit or in storage" when
+    // reading production logs for a failed document.
+    console.info(
+      `[processDocument] documentId=${documentId} storageKey=${storageKey} bytes=${buffer.length} head=${buffer.subarray(0, 8).toString("hex")}`,
+    );
+
     const { pages, fullText } = await extractDocumentText(buffer, mimeTypeGuess);
     const cleanedFullText = cleanText(fullText);
     const wordCount = countWords(cleanedFullText);
@@ -33,9 +40,12 @@ export async function processDocument(documentId: string, storageKey: string) {
       text: cleanText(p.text),
     }));
 
-    if (wordCount < 20) {
+    const MIN_WORD_COUNT = 20;
+    if (wordCount < MIN_WORD_COUNT) {
       throw new DocumentExtractionError(
-        "This document doesn't contain enough readable text to process.",
+        wordCount === 0
+          ? "No readable text was found in this document. If it's a scanned PDF (a photo or image of a page rather than real text), it needs OCR before it can be processed."
+          : `This document only has ${wordCount} word${wordCount === 1 ? "" : "s"} of readable text — at least ${MIN_WORD_COUNT} are needed to process it. It may be mostly images, or the text may not have extracted correctly.`,
       );
     }
 
@@ -74,6 +84,9 @@ export async function processDocument(documentId: string, storageKey: string) {
       err instanceof DocumentExtractionError || err instanceof AiServiceError
         ? err.message
         : `Something went wrong while processing this document. (${(err as Error).message})`;
+    // Kept out of the DB error message (which is user-facing) but logged
+    // here so production failures are diagnosable from Vercel logs.
+    console.error(`[processDocument] documentId=${documentId} failed:`, err);
     await updateDocumentStatus(documentId, "failed", { errorMessage: message });
   }
 }

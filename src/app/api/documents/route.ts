@@ -57,6 +57,21 @@ export async function POST(request: Request) {
 
   try {
     const buffer = Buffer.from(await file.arrayBuffer());
+
+    // isAcceptedFile() above only checks the MIME type/extension the browser
+    // reported, not the actual bytes. Catch an obviously-mislabeled file
+    // (e.g. a .docx renamed to .pdf) here so the user gets an immediate,
+    // specific error instead of waiting for the async pipeline to fail.
+    if (mimeType === "application/pdf" && !buffer.subarray(0, 5).toString("utf-8").startsWith("%PDF-")) {
+      return NextResponse.json(
+        {
+          error:
+            "This file isn't a valid PDF (its contents don't start with a PDF header). It may be corrupted or renamed from another file type.",
+        },
+        { status: 415 },
+      );
+    }
+
     const storageRef = await getStorage().save(storageKey, buffer);
 
     await ensureUser(userId);

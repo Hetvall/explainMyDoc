@@ -9,7 +9,8 @@ Rules:
 - Keep it practical and specific to the document's actual structure/content — reference real sections or themes, not generic advice.
 - Spread work realistically across the available days and hours; don't cram everything into day one.
 - Include a mix of reading, active recall (flashcards/quiz), and review days when there are 3+ days available.
-- Keep each day to 2-4 concrete tasks.`;
+- Keep each day to 2-4 concrete tasks.
+- Write the whole plan in the same language as the document content (detect it from the text — do not default to English if the document is in another language).`;
 
 export async function generateStudyPlan(
   documentId: string,

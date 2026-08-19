@@ -11,7 +11,8 @@ Rules:
 - If the document doesn't contain action items, return an empty array for actionItems — do not fabricate any.
 - Keep keyPoints as short, standalone, concrete statements (not vague generalities).
 - "concepts" should only include terms that are actually meaningful/technical in this document.
-- "whoShouldCare" should be a specific, practical answer, not generic filler.`;
+- "whoShouldCare" should be a specific, practical answer, not generic filler.
+- Write all output text in the same language as the document content (detect it from the text — do not default to English if the document is in another language).`;
 
 export async function generateSummary(documentId: string): Promise<Summary> {
   const { title, text, truncated } = await getDocumentContext(documentId);

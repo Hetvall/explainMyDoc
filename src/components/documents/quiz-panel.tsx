@@ -51,6 +51,9 @@ export function QuizPanel({ documentId }: { documentId: string }) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Couldn't generate a quiz.");
+      if (!Array.isArray(data.quiz?.questions)) {
+        throw new Error("The quiz came back in an unexpected format. Please try again.");
+      }
       setQuiz(data.quiz);
       setAnswers({});
       setStage("taking");
@@ -152,7 +155,7 @@ export function QuizPanel({ documentId }: { documentId: string }) {
               {i + 1}. {q.question}
             </p>
             <div className="space-y-1.5">
-              {q.options.map((opt) => (
+              {(q.options ?? []).map((opt) => (
                 <button
                   key={opt}
                   onClick={() => setAnswers((prev) => ({ ...prev, [q.id]: opt }))}

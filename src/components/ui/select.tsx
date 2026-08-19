@@ -69,7 +69,20 @@ const SelectItem = React.forwardRef<
         <Check className="size-4" />
       </SelectPrimitive.ItemIndicator>
     </span>
-    <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
+    {/*
+      Radix mirrors this text into the trigger's SelectValue via its own
+      DOM bookkeeping, on top of React's own reconciliation of this node.
+      Browser auto-translation (Google Translate) rewrites text nodes
+      in-place with <font> wrappers; when either Radix or React then tries
+      to remove/replace the node it no longer recognizes, it throws
+      "Failed to execute 'removeChild' on 'Node'" and crashes the page
+      (see document-reader.tsx for the same issue/fix on the reader body).
+      Giving the text its own leaf element keeps translation's mutation
+      scoped to a node neither Radix nor React needs to remove directly.
+    */}
+    <SelectPrimitive.ItemText>
+      <span>{children}</span>
+    </SelectPrimitive.ItemText>
   </SelectPrimitive.Item>
 ));
 SelectItem.displayName = SelectPrimitive.Item.displayName;

@@ -7,7 +7,8 @@ const SYSTEM_PROMPT = `You create study flashcards strictly based on a given doc
 Rules:
 - Each card's front is a concise question or concept prompt; the back is a concise, correct answer/explanation grounded in the document.
 - Cover the document's distinct key concepts — don't create near-duplicate cards.
-- Keep answers tight (1-3 sentences) — flashcards are for quick recall, not essays.`;
+- Keep answers tight (1-3 sentences) — flashcards are for quick recall, not essays.
+- Write all cards in the same language as the document content (detect it from the text — do not default to English if the document is in another language).`;
 
 export async function generateFlashcards(
   documentId: string,

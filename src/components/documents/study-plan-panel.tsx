@@ -37,7 +37,7 @@ export function StudyPlanPanel({ documentId }: { documentId: string }) {
     (async () => {
       const res = await fetch(`/api/documents/${documentId}/study-plan`);
       const data = await res.json();
-      setPlan(data.studyPlan);
+      setPlan(Array.isArray(data.studyPlan?.plan?.days) ? data.studyPlan : null);
       setLoading(false);
     })();
   }, [documentId]);
@@ -53,6 +53,9 @@ export function StudyPlanPanel({ documentId }: { documentId: string }) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Couldn't generate a study plan.");
+      if (!Array.isArray(data.studyPlan?.plan?.days)) {
+        throw new Error("The study plan came back in an unexpected format. Please try again.");
+      }
       setPlan(data.studyPlan);
     } catch (err) {
       setError((err as Error).message);
@@ -81,7 +84,7 @@ export function StudyPlanPanel({ documentId }: { documentId: string }) {
               </p>
               <p className="mt-0.5 text-sm font-medium">{d.title}</p>
               <ul className="mt-1.5 space-y-1 text-sm text-foreground-muted">
-                {d.tasks.map((t, i) => (
+                {(d.tasks ?? []).map((t, i) => (
                   <li key={i}>· {t}</li>
                 ))}
               </ul>
