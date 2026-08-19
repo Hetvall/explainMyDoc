@@ -37,7 +37,20 @@ async function extractTxt(buffer: Buffer): Promise<ExtractionResult> {
   return { pages: [{ pageNumber: 1, text }], fullText: text };
 }
 
+const PDF_MAGIC = Buffer.from("%PDF-", "utf-8");
+
 async function extractPdf(buffer: Buffer): Promise<ExtractionResult> {
+  // PDF.js will eventually reject non-PDF bytes too, but its error messages
+  // are generic ("Invalid PDF structure.") and don't distinguish "this isn't
+  // a PDF at all" from a real parse failure. Checking the header up front
+  // lets us give a precise, actionable message for the common case of a
+  // renamed/non-PDF file.
+  if (!buffer.subarray(0, PDF_MAGIC.length).equals(PDF_MAGIC)) {
+    throw new DocumentExtractionError(
+      "This file isn't a valid PDF (its contents don't start with a PDF header). It may be corrupted or renamed from another file type.",
+    );
+  }
+
   try {
     const pdf = await getDocumentProxy(new Uint8Array(buffer));
     const { text } = await extractPdfText(pdf, { mergePages: false });
@@ -57,8 +70,14 @@ async function extractPdf(buffer: Buffer): Promise<ExtractionResult> {
     return { pages, fullText };
   } catch (err) {
     if (err instanceof DocumentExtractionError) throw err;
+    const cause = err as Error & { name?: string };
+    if (cause.name === "PasswordException") {
+      throw new DocumentExtractionError(
+        "This PDF is password-protected. Remove the password and upload it again.",
+      );
+    }
     throw new DocumentExtractionError(
-      `Failed to read this PDF. It may be corrupted or password-protected. (${(err as Error).message})`,
+      `Failed to read this PDF. It may be corrupted or password-protected. (${cause.name ?? "Error"}: ${cause.message})`,
     );
   }
 }

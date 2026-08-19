@@ -9,7 +9,8 @@ Rules:
 - Each question has exactly 4 options, and correctAnswer must exactly match one of them (character for character).
 - Distractors (wrong options) should be plausible, not silly, but clearly wrong to someone who read the document.
 - Vary what each question tests: facts, definitions, cause/effect, the author's recommendations, etc.
-- Do not create questions about information that isn't in the document.`;
+- Do not create questions about information that isn't in the document.
+- Write all questions, options, and explanations in the same language as the document content (detect it from the text — do not default to English if the document is in another language).`;
 
 const DIFFICULTY_GUIDANCE: Record<string, string> = {
   easy: "Test recall of clearly-stated facts and definitions.",

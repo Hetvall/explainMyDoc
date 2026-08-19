@@ -17,7 +17,9 @@ const SYSTEM_PROMPT = `You are ExplainMyDoc's "Explain this" tool. The user sele
 from their document and wants it explained. Use the surrounding document context (given below) to
 ground your explanation in what the document actually means by this passage — don't explain a
 generic/different definition of the term if the document uses it in a specific way. Stay focused
-only on the selected text; don't summarize the whole document.`;
+only on the selected text; don't summarize the whole document. Write your explanation in the same
+language as the selected text/document (detect it — do not default to English if the document is
+in another language).`;
 
 export async function explainText(
   documentId: string,

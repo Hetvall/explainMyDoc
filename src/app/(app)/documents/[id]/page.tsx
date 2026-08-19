@@ -41,7 +41,7 @@ export default async function DocumentPage({
             <div className="flex size-9 items-center justify-center rounded-md bg-brand-soft text-brand">
               <FileText className="size-4" />
             </div>
-            <h1 className="mt-3 font-serif text-lg font-semibold leading-snug">
+            <h1 className="mt-3 break-words font-serif text-lg font-semibold leading-snug">
               {document.title}
             </h1>
             <div className="mt-3">

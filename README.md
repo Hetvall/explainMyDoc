@@ -46,6 +46,9 @@ Upload → Understand → Ask → Practice → Review → Understand better
   (persisted; spaced-repetition scheduling is a natural next step, see Limitations).
 - **Study plan** — a practical day-by-day plan generated from a goal, available days, and hours/day.
 - **Dashboard** — recent documents, processing status, quiz/flashcard stats, quick actions.
+- **Multilingual generation** — every AI feature (summary, chat, explain, quiz, flashcards, study
+  plan) detects the document's language from its content and responds in that language, instead of
+  defaulting to English.
 
 ## Architecture
 
@@ -146,7 +149,7 @@ See [`.env.example`](.env.example) for the full list with descriptions. Summary:
 | `GROQ_API_KEY` | Required when `AI_PROVIDER=groq` — free key at console.groq.com/keys |
 | `GROQ_MODEL` | Chat/completion model (default `openai/gpt-oss-120b`) |
 | `EMBEDDING_DIM` | Output dimension all providers are forced to (default `768`) |
-| `MAX_FILE_SIZE_MB` | Upload size limit |
+| `MAX_FILE_SIZE_MB` | Upload size limit (also raises Next's proxy request-body cap in `next.config.ts`, which defaults to 10MB and would otherwise reject large uploads before the route's own size check runs) |
 | `STORAGE_DRIVER` | `local` (default, dev) or `blob` (Vercel Blob, for serverless deploys) |
 | `STORAGE_DIR` | Local filesystem directory for uploaded files (only used when `STORAGE_DRIVER=local`) |
 | `BLOB_READ_WRITE_TOKEN` | Vercel Blob token (only needed when `STORAGE_DRIVER=blob`; Vercel injects it automatically once a Blob store is connected) |

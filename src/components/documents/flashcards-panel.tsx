@@ -57,12 +57,20 @@ export function FlashcardsPanel({ documentId }: { documentId: string }) {
   async function rate(rating: "again" | "hard" | "good" | "easy") {
     if (!cards) return;
     const card = cards[index];
+    if (!card) return;
     fetch(`/api/documents/${documentId}/flashcards/${card.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ rating }),
     }).catch(() => {});
 
+    setCards((prev) =>
+      prev
+        ? prev.map((c) =>
+            c.id === card.id ? { ...c, difficulty: rating, reviewCount: c.reviewCount + 1 } : c
+          )
+        : prev
+    );
     setFlipped(false);
     setIndex((i) => (i + 1 < cards.length ? i + 1 : i));
   }

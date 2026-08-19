@@ -43,8 +43,15 @@ export function DocumentReader({ documentId, pages }: Props) {
               Page {page.pageNumber}
             </p>
             {page.text.split(/\n{2,}/).map((para, i) => (
+              // Each paragraph's text sits in its own leaf element so that
+              // browser auto-translation (e.g. Google Translate) only ever
+              // mutates nodes React doesn't also touch — it swaps text
+              // nodes for <font> wrappers, and if React later tries to
+              // reconcile/remove one of those nodes directly it throws
+              // "Failed to execute 'removeChild' on 'Node'", which is what
+              // was crashing this page for translated-locale users.
               <p key={i} className="mb-4 whitespace-pre-wrap text-foreground">
-                {para}
+                <span>{para}</span>
               </p>
             ))}
           </section>

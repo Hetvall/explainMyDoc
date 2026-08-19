@@ -48,11 +48,22 @@ export function ExplainMenu({
     }
   }
 
+  // This component swaps between two entirely different subtrees (the mode
+  // picker below vs. the detail view further down) and, within the detail
+  // view, mounts/unmounts several more blocks (loading/error/explanation).
+  // Each of those is a point where React removes DOM nodes it manages. If
+  // browser auto-translation (Google Translate) has rewritten a text node
+  // in place with a <font> wrapper, React can no longer find the node it
+  // expects to remove and throws "Failed to execute 'removeChild' on
+  // 'Node'" — the crash behind the "Algo salió mal" screen (see
+  // components/ui/select.tsx for the full writeup). Every raw text child
+  // below is wrapped in its own <span> so translation's mutation stays
+  // scoped to a leaf neither React nor Radix needs to remove directly.
   if (!activeMode) {
     return (
       <div className="flex w-64 flex-col gap-1">
         <p className="flex items-center gap-1.5 px-2 py-1 text-xs font-medium text-foreground-subtle">
-          <Sparkles className="size-3" /> Explain this
+          <Sparkles className="size-3" /> <span>Explain this</span>
         </p>
         {MODES.map((mode) => (
           <button
@@ -60,7 +71,7 @@ export function ExplainMenu({
             onClick={() => handleModeClick(mode.id)}
             className="rounded-sm px-2 py-1.5 text-left text-sm hover:bg-surface-muted"
           >
-            {mode.label}
+            <span>{mode.label}</span>
           </button>
         ))}
       </div>
@@ -72,7 +83,7 @@ export function ExplainMenu({
       <div className="mb-2 flex items-center justify-between">
         <p className="flex items-center gap-1.5 text-xs font-medium text-foreground-subtle">
           <Sparkles className="size-3" />
-          {MODES.find((m) => m.id === activeMode)?.label}
+          <span>{MODES.find((m) => m.id === activeMode)?.label}</span>
         </p>
         <button onClick={onDone} className="text-foreground-subtle hover:text-foreground">
           <X className="size-3.5" />
@@ -80,21 +91,25 @@ export function ExplainMenu({
       </div>
 
       <div className="mb-2 rounded-sm bg-surface-muted px-2 py-1.5 text-xs italic text-foreground-muted line-clamp-2">
-        &ldquo;{selectedText}&rdquo;
+        <span>&ldquo;{selectedText}&rdquo;</span>
       </div>
 
       {loading && (
         <div className="flex items-center gap-2 py-4 text-sm text-foreground-muted">
           <Loader2 className="size-4 animate-spin" />
-          Thinking…
+          <span>Thinking…</span>
         </div>
       )}
 
-      {error && <p className="py-2 text-sm text-danger">{error}</p>}
+      {error && (
+        <p className="py-2 text-sm text-danger">
+          <span>{error}</span>
+        </p>
+      )}
 
       {explanation && (
         <p className="max-h-64 overflow-y-auto text-sm leading-relaxed text-foreground">
-          {explanation}
+          <span>{explanation}</span>
         </p>
       )}
 
@@ -111,7 +126,7 @@ export function ExplainMenu({
                   : "bg-surface-muted text-foreground-muted hover:bg-border/60",
               )}
             >
-              {mode.label}
+              <span>{mode.label}</span>
             </button>
           ))}
         </div>

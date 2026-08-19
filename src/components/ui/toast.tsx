@@ -63,12 +63,19 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
           >
             <div className="mt-0.5">{icons[t.variant]}</div>
             <div className="flex-1">
+              {/*
+                Toasts auto-unmount on a timer (onOpenChange below). Text
+                translated in place by the browser (Google Translate)
+                needs its own leaf node here too, or that unmount can hit
+                the same removeChild crash as the Select items — see
+                components/ui/select.tsx for the full explanation.
+              */}
               <ToastPrimitive.Title className="text-sm font-medium">
-                {t.title}
+                <span>{t.title}</span>
               </ToastPrimitive.Title>
               {t.description && (
                 <ToastPrimitive.Description className="mt-0.5 text-sm text-foreground-muted">
-                  {t.description}
+                  <span>{t.description}</span>
                 </ToastPrimitive.Description>
               )}
             </div>
